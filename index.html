@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Таблица умножения: тренажёр</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;700&family=Caveat:wght@600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#FBFCFE; --grid:#DCE6F2; --ink:#1F3FA8; --ink-soft:#8EA2DA; --ink-pale:#D7DFF5;
+  --red:#D23A44; --green:#24855A; --text:#2E3340; --muted:#6B7385; --surface:#FFFFFF; --line:#C9D5E6;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --paper:#131923; --grid:#1F2A3B; --ink:#93AAFF; --ink-soft:#5A6FB8; --ink-pale:#263355;
+    --red:#FF6B74; --green:#4CC38A; --text:#E4E8F1; --muted:#98A1B5; --surface:#1A2230; --line:#2C3A50;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --paper:#131923; --grid:#1F2A3B; --ink:#93AAFF; --ink-soft:#5A6FB8; --ink-pale:#263355;
+  --red:#FF6B74; --green:#4CC38A; --text:#E4E8F1; --muted:#98A1B5; --surface:#1A2230; --line:#2C3A50;
+  color-scheme:dark;
+}
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{
+  margin:0; min-height:100vh; color:var(--text);
+  font-family:"Rubik",system-ui,-apple-system,"Segoe UI",Arial,sans-serif; font-size:16px; line-height:1.45;
+  background-color:var(--paper);
+  background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);
+  background-size:24px 24px;
+}
+.margin-line{position:fixed;top:0;bottom:0;left:max(16px,calc(50% - 330px));width:2px;background:var(--red);opacity:.55;pointer-events:none}
+main{max-width:600px;margin:0 auto;padding:28px 20px 40px 40px;position:relative}
+h1{font-size:30px;line-height:1.15;margin:4px 0 6px;font-weight:700;color:var(--ink)}
+.hand{font-family:"Caveat","Comic Sans MS",cursive}
+.sub{color:var(--muted);margin:0 0 22px;max-width:46ch}
+h2{font-size:17px;font-weight:500;margin:26px 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  font:inherit;font-size:18px;font-weight:500;width:48px;height:48px;border-radius:10px;cursor:pointer;
+  border:2px solid var(--ink);background:var(--surface);color:var(--ink);
+}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface)}
+.toggle{display:flex;align-items:center;gap:10px;margin-top:14px;cursor:pointer;user-select:none}
+.toggle input{width:20px;height:20px;accent-color:var(--ink)}
+.modes{display:grid;gap:10px;margin-top:22px}
+.btn{
+  font:inherit;font-size:17px;font-weight:500;padding:14px 18px;border-radius:12px;cursor:pointer;text-align:left;
+  border:2px solid var(--ink);background:var(--surface);color:var(--ink);display:flex;justify-content:space-between;align-items:center;gap:12px;
+}
+.btn small{font-weight:400;color:var(--muted);font-size:14px}
+.btn.primary{background:var(--ink);color:var(--surface)}
+.btn.primary small{color:var(--ink-pale)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+:focus-visible{outline:3px solid var(--red);outline-offset:2px}
+.best{font-size:15px;color:var(--muted);margin-top:10px}
+
+/* progress grid */
+.pgrid{display:grid;grid-template-columns:repeat(9,1fr);gap:3px;max-width:420px;margin-top:6px}
+.pgrid div{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:12px;border-radius:4px}
+.pgrid .h{font-weight:700;color:var(--ink);font-size:14px}
+.pgrid .c{background:var(--surface);border:1px solid var(--line);color:transparent}
+.pgrid .l1{background:var(--ink-pale);border-color:var(--ink-pale)}
+.pgrid .l2{background:var(--ink-soft);border-color:var(--ink-soft)}
+.pgrid .l3{background:var(--ink);border-color:var(--ink)}
+.pgrid .bad{background:var(--surface);border:2px solid var(--red);color:var(--red);font-family:"Caveat",cursive;font-size:18px}
+.legend{font-size:14px;color:var(--muted);margin-top:8px;max-width:52ch}
+
+/* game */
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.ghost{font:inherit;font-size:15px;background:none;border:none;color:var(--muted);cursor:pointer;padding:8px 0;text-decoration:underline}
+.stats{display:flex;gap:18px;font-size:15px;color:var(--muted)}
+.stats b{color:var(--text);font-weight:500}
+.ruler{height:10px;border:2px solid var(--ink);border-radius:6px;margin:14px 0 0;overflow:hidden;background:var(--surface)}
+.ruler i{display:block;height:100%;background:var(--ink);width:100%;transition:width .2s linear}
+.ruler.low i{background:var(--red)}
+.task{
+  margin:34px 0 10px;font-size:clamp(48px,14vw,76px);font-weight:700;text-align:center;letter-spacing:.02em;color:var(--text);
+  font-variant-numeric:tabular-nums;white-space:nowrap
+}
+.task .ans{display:inline-block;min-width:1.6em;border-bottom:4px solid var(--ink);color:var(--ink);text-align:center}
+.task .ans:empty::after{content:"?";color:var(--ink-soft)}
+.note{height:44px;text-align:center;font-family:"Caveat",cursive;font-size:32px;line-height:44px}
+.note.ok{color:var(--green)} .note.no{color:var(--red)}
+.shake{animation:shake .32s}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-8px)}75%{transform:translateX(8px)}}
+@media (prefers-reduced-motion: reduce){.shake{animation:none}.ruler i{transition:none}}
+.pad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:330px;margin:14px auto 0}
+.pad button{
+  font:inherit;font-size:26px;font-weight:500;height:60px;border-radius:12px;cursor:pointer;
+  border:2px solid var(--line);background:var(--surface);color:var(--text);
+}
+.pad button:active{background:var(--ink-pale)}
+.pad .ok{background:var(--ink);border-color:var(--ink);color:var(--surface);font-size:19px}
+
+/* results */
+.big{font-size:64px;font-weight:700;color:var(--ink);line-height:1;margin:18px 0 4px}
+.mist{list-style:none;padding:0;margin:8px 0 0;font-size:20px;font-variant-numeric:tabular-nums}
+.mist li{padding:6px 0;border-bottom:1px solid var(--line);display:flex;gap:14px;align-items:baseline}
+.mist s{color:var(--muted)}
+.mist .fix{font-family:"Caveat",cursive;font-size:28px;color:var(--red);font-weight:700}
+.hidden{display:none !important}
+.foot{margin-top:30px;font-size:14px;color:var(--muted)}
+@media (max-width:420px){main{padding-left:30px;padding-right:14px}.chip{width:42px;height:42px;font-size:16px}}
+</style>
+</head>
+<body>
+<div class="margin-line" aria-hidden="true"></div>
+<main>
+
+<section id="start">
+  <h1>Таблица умножения</h1>
+  <p class="sub">Тренажёр к ОГЭ. Чем быстрее и точнее считаешь в уме, тем меньше ошибок в любом задании.</p>
+
+  <h2>Какие числа тренируем</h2>
+  <div class="chips" id="chips"></div>
+  <label class="toggle"><input type="checkbox" id="divToggle"> Добавить деление (например, 56 : 8)</label>
+
+  <div class="modes">
+    <button class="btn primary" id="bSprint">Спринт на 60 секунд <small id="bestLbl">рекорд: —</small></button>
+    <button class="btn" id="bPractice">Тренировка без времени <small>20 примеров</small></button>
+    <button class="btn" id="bErrors">Работа над ошибками <small id="errLbl">ошибок пока нет</small></button>
+  </div>
+
+  <h2>Карта прогресса</h2>
+  <div class="pgrid" id="pgrid" aria-label="Карта прогресса по таблице умножения"></div>
+  <p class="legend">Чем темнее клетка, тем увереннее пример: тёмно-синяя значит три верных ответа подряд быстрее чем за 3 секунды. Красный крестик — последний ответ был с ошибкой.</p>
+  <p class="foot"><button class="ghost" id="bReset">Сбросить прогресс</button></p>
+</section>
+
+<section id="game" class="hidden">
+  <div class="top">
+    <button class="ghost" id="bQuit">Закончить</button>
+    <div class="stats"><span>Верно: <b id="sOk">0</b></span><span>Серия: <b id="sStreak">0</b></span><span id="sLeftWrap">Осталось: <b id="sLeft">0</b></span></div>
+  </div>
+  <div class="ruler" id="ruler"><i id="rulerBar"></i></div>
+  <div class="task" id="task" aria-live="polite"><span id="q">7 × 8</span> = <span class="ans" id="ans"></span></div>
+  <div class="note" id="note" aria-live="polite"></div>
+  <div class="pad" id="pad"></div>
+</section>
+
+<section id="result" class="hidden">
+  <h1 id="rTitle">Время вышло</h1>
+  <div class="big" id="rScore">0</div>
+  <p class="sub" id="rSub"></p>
+  <div id="rMistWrap">
+    <h2>Ошибки</h2>
+    <ul class="mist" id="rMist"></ul>
+  </div>
+  <div class="modes">
+    <button class="btn primary" id="rAgain">Ещё раз</button>
+    <button class="btn" id="rErrors">Повторить ошибки</button>
+    <button class="btn" id="rHome">В начало</button>
+  </div>
+</section>
+
+</main>
+<script>
+(function(){
+  const KEY='mult-trainer-v1';
+  const NUMS=[2,3,4,5,6,7,8,9];
+  const SPRINT=60;
+  let store={stats:{},best:0,tables:NUMS.slice(),div:false};
+  try{const raw=localStorage.getItem(KEY); if(raw) store=Object.assign(store,JSON.parse(raw));}catch(e){}
+  function save(){try{localStorage.setItem(KEY,JSON.stringify(store));}catch(e){}}
+  const $=id=>document.getElementById(id);
+  const fk=(a,b)=>Math.min(a,b)+'x'+Math.max(a,b);
+
+  function level(k){
+    const s=store.stats[k]; if(!s) return 0;
+    if(s.lastWrong) return -1;
+    const t=s.t||[]; const avg=t.length?t.reduce((x,y)=>x+y,0)/t.length:99999;
+    if(s.streak>=3 && avg<=3000) return 3;
+    if(s.streak>=1) return 2;
+    return 1;
+  }
+  function weakKeys(){
+    return Object.keys(store.stats).filter(k=>{const s=store.stats[k];return s.lastWrong||(s.w>0&&level(k)<3);});
+  }
+
+  /* start screen */
+  function renderChips(){
+    const c=$('chips'); c.innerHTML='';
+    NUMS.forEach(n=>{
+      const b=document.createElement('button'); b.className='chip'; b.textContent=n;
+      b.setAttribute('aria-pressed',store.tables.includes(n)?'true':'false');
+      b.setAttribute('aria-label','Таблица на '+n);
+      b.onclick=()=>{
+        if(store.tables.includes(n)){ if(store.tables.length>1) store.tables=store.tables.filter(x=>x!==n); }
+        else store.tables.push(n);
+        save(); renderChips();
+      };
+      c.appendChild(b);
+    });
+    $('divToggle').checked=!!store.div;
+  }
+  $('divToggle').onchange=e=>{store.div=e.target.checked;save();};
+  function renderGrid(){
+    const g=$('pgrid'); g.innerHTML='';
+    const corner=document.createElement('div'); corner.className='h'; corner.textContent='×'; g.appendChild(corner);
+    NUMS.forEach(n=>{const d=document.createElement('div');d.className='h';d.textContent=n;g.appendChild(d);});
+    NUMS.forEach(a=>{
+      const h=document.createElement('div');h.className='h';h.textContent=a;g.appendChild(h);
+      NUMS.forEach(b=>{
+        const d=document.createElement('div'); const L=level(fk(a,b));
+        d.className='c'+(L===-1?' bad':L>0?' l'+L:'');
+        if(L===-1) d.textContent='✕';
+        d.title=a+' × '+b+' = '+(a*b);
+        g.appendChild(d);
+      });
+    });
+  }
+  function renderStart(){
+    renderChips(); renderGrid();
+    $('bestLbl').textContent='рекорд: '+(store.best?store.best+' '+plural(store.best):'—');
+    const w=weakKeys().length;
+    $('bErrors').disabled=w===0;
+    $('errLbl').textContent=w?w+' '+plural(w)+' на повтор':'ошибок пока нет';
+  }
+  function plural(n){const m10=n%10,m100=n%100;if(m10===1&&m100!==11)return'пример';if(m10>=2&&m10<=4&&(m100<12||m100>14))return'примера';return'примеров';}
+  $('bReset').onclick=()=>{ if(confirm('Стереть весь прогресс и рекорд?')){store.stats={};store.best=0;save();renderStart();} };
+
+  /* game */
+  let mode,q,input='',ok=0,streak=0,total=0,left=0,mistakes=[],timer=null,endAt=0,qStart=0,locked=false,lastKey='',pool=[];
+  function show(id){['start','game','result'].forEach(s=>$(s).classList.toggle('hidden',s!==id)); window.scrollTo(0,0);}
+
+  function allFacts(){
+    const out=[]; store.tables.forEach(a=>NUMS.forEach(b=>out.push([a,b]))); return out;
+  }
+  function pickFact(){
+    let facts;
+    if(mode==='errors'){
+      facts=pool.map(k=>{const [a,b]=k.split('x').map(Number);return Math.random()<.5?[a,b]:[b,a];});
+    } else facts=allFacts();
+    // weight weak facts higher
+    let tries=0,f;
+    do{
+      const weighted=[];
+      facts.forEach(x=>{const L=level(fk(x[0],x[1]));const w=L===-1?4:L===0?2:L===1?2:L===2?1.5:1;weighted.push([x,w]);});
+      let sum=weighted.reduce((s,x)=>s+x[1],0),r=Math.random()*sum;
+      for(const [x,w] of weighted){r-=w;if(r<=0){f=x;break;}}
+      if(!f) f=weighted[weighted.length-1][0];
+      tries++;
+    } while(fk(f[0],f[1])===lastKey && facts.length>1 && tries<10);
+    lastKey=fk(f[0],f[1]);
+    const [a,b]=f;
+    if(store.div && Math.random()<.4) return {text:(a*b)+' : '+a, answer:b, key:lastKey, full:(a*b)+' : '+a+' = '+b};
+    return {text:a+' × '+b, answer:a*b, key:lastKey, full:a+' × '+b+' = '+(a*b)};
+  }
+  function nextQ(){
+    q=pickFact(); input=''; locked=false;
+    $('q').textContent=q.text; $('ans').textContent=''; $('note').textContent=''; $('note').className='note';
+    qStart=performance.now();
+  }
+  function start(m){
+    mode=m; ok=0; streak=0; total=0; mistakes=[];
+    if(m==='errors'){pool=weakKeys(); if(!pool.length){renderStart();show('start');return;}}
+    left = m==='sprint'?0 : m==='practice'?20 : Math.min(15,Math.max(8,pool.length*2));
+    $('sLeftWrap').classList.toggle('hidden',m==='sprint');
+    $('ruler').classList.toggle('hidden',m!=='sprint');
+    updStats(); show('game'); nextQ();
+    clearInterval(timer);
+    if(m==='sprint'){
+      endAt=performance.now()+SPRINT*1000;
+      timer=setInterval(()=>{
+        const rem=Math.max(0,endAt-performance.now());
+        $('rulerBar').style.width=(rem/(SPRINT*10))+'%';
+        $('ruler').classList.toggle('low',rem<10000);
+        if(rem<=0) finish();
+      },100);
+    }
+  }
+  function updStats(){$('sOk').textContent=ok;$('sStreak').textContent=streak;$('sLeft').textContent=left;}
+  function record(key,right,ms){
+    const s=store.stats[key]||(store.stats[key]={r:0,w:0,streak:0,t:[]});
+    if(right){s.r++;s.streak++;s.lastWrong=false;s.t=(s.t||[]).concat(ms).slice(-3);}
+    else {s.w++;s.streak=0;s.lastWrong=true;s.t=[];}
+    save();
+  }
+  function submit(){
+    if(locked||input==='') return;
+    const ms=performance.now()-qStart; const val=parseInt(input,10); total++;
+    if(val===q.answer){
+      ok++; streak++; record(q.key,true,ms);
+      $('note').textContent= streak>0&&streak%10===0 ? streak+' подряд!' : 'верно';
+      $('note').className='note ok';
+      afterAnswer(250);
+    } else {
+      streak=0; record(q.key,false,ms); mistakes.push({full:q.full,wrong:input,text:q.text});
+      $('note').textContent='правильно: '+q.answer; $('note').className='note no';
+      const t=$('task'); t.classList.remove('shake'); void t.offsetWidth; t.classList.add('shake');
+      afterAnswer(1100);
+    }
+    updStats();
+  }
+  function afterAnswer(delay){
+    locked=true;
+    if(mode!=='sprint'){left--;updStats();}
+    setTimeout(()=>{
+      if($('game').classList.contains('hidden')) return;
+      if(mode!=='sprint' && left<=0){finish();return;}
+      if(mode==='sprint' && performance.now()>=endAt){finish();return;}
+      nextQ();
+    },delay);
+  }
+  function press(k){
+    if(locked) return;
+    if(k==='del'){input=input.slice(0,-1);}
+    else if(k==='ok'){submit();return;}
+    else if(input.length<3){input+=k;}
+    $('ans').textContent=input;
+  }
+  (function buildPad(){
+    const p=$('pad');
+    ['1','2','3','4','5','6','7','8','9','del','0','ok'].forEach(k=>{
+      const b=document.createElement('button');
+      b.textContent=k==='del'?'⌫':k==='ok'?'Ответить':k;
+      if(k==='ok') b.className='ok';
+      b.setAttribute('aria-label',k==='del'?'Стереть':k==='ok'?'Ответить':k);
+      b.onclick=()=>press(k); p.appendChild(b);
+    });
+  })();
+  document.addEventListener('keydown',e=>{
+    if($('game').classList.contains('hidden')) return;
+    if(/^[0-9]$/.test(e.key)){press(e.key);e.preventDefault();}
+    else if(e.key==='Backspace'){press('del');e.preventDefault();}
+    else if(e.key==='Enter'){press('ok');e.preventDefault();}
+    else if(e.key==='Escape'){finish();}
+  });
+
+  function finish(){
+    clearInterval(timer); timer=null;
+    const acc= total?Math.round(ok/total*100):0;
+    let newBest=false;
+    if(mode==='sprint' && ok>store.best){store.best=ok;newBest=true;save();}
+    $('rTitle').textContent = mode==='sprint'?'Время вышло':mode==='practice'?'Тренировка закончена':'Ошибки повторены';
+    $('rScore').textContent = mode==='sprint'? ok : ok+' из '+total;
+    let sub = mode==='sprint' ? ok+' '+plural(ok)+' за минуту, точность '+acc+'%.' : 'Точность '+acc+'%.';
+    if(newBest) sub+=' Это новый рекорд.';
+    else if(mode==='sprint' && store.best) sub+=' Рекорд: '+store.best+'.';
+    $('rSub').textContent=sub;
+    const ul=$('rMist'); ul.innerHTML='';
+    $('rMistWrap').classList.toggle('hidden',!mistakes.length);
+    const seen=new Set();
+    mistakes.forEach(m=>{
+      if(seen.has(m.text)) return; seen.add(m.text);
+      const li=document.createElement('li');
+      li.innerHTML='<span>'+m.text+' = <s>'+m.wrong+'</s></span><span class="fix">'+m.full.split('= ')[1]+'</span>';
+      ul.appendChild(li);
+    });
+    $('rErrors').disabled=weakKeys().length===0;
+    show('result');
+  }
+  $('bSprint').onclick=()=>start('sprint');
+  $('bPractice').onclick=()=>start('practice');
+  $('bErrors').onclick=()=>start('errors');
+  $('bQuit').onclick=()=>finish();
+  $('rAgain').onclick=()=>start(mode==='errors'&&weakKeys().length===0?'practice':mode);
+  $('rErrors').onclick=()=>start('errors');
+  $('rHome').onclick=()=>{renderStart();show('start');};
+  renderStart();
+})();
+</script>
+</body>
+</html>
